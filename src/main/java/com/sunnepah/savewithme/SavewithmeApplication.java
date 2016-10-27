@@ -1,7 +1,11 @@
 package com.sunnepah.savewithme;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.sunnepah.savewithme.api.TweeMeRestService;
 import com.sunnepah.savewithme.db.UserDAO;
 import com.sunnepah.savewithme.resources.ClientResource;
+import com.sunnepah.savewithme.web.UserServlet;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.JerseyClientBuilder;
@@ -11,12 +15,18 @@ import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
 import javax.ws.rs.client.Client;
 
 import com.sunnepah.savewithme.auth.AuthFilter;
 import com.sunnepah.savewithme.core.User;
 import com.sunnepah.savewithme.resources.AuthResource;
 import com.sunnepah.savewithme.resources.UserResource;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
+
+import java.util.EnumSet;
 
 public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> {
   public static void main(final String[] args) throws Exception {
@@ -33,7 +43,18 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
 
   @Override
   public String getName() {
-    return "SaveWithMe";
+    return "SaveWithMe " + getVersion();
+  }
+
+  private String getVersion() {
+    String version = null;
+
+    Package aPackage = Package.getPackage("com.sunnepah.savewithme");
+    if (aPackage != null) {
+      version = aPackage.getImplementationVersion();
+    }
+
+    return version;
   }
 
   @Override
@@ -47,11 +68,11 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
 
     bootstrap.addBundle(hibernateBundle);
 
+//    bootstrap.addBundle(new AssetsBundle("/assets/", "/", "index.html", "static"));
     bootstrap.addBundle(new AssetsBundle("/assets/app.js", "/app.js", null, "app"));
     bootstrap.addBundle(new AssetsBundle("/assets/stylesheets", "/stylesheets", null, "css"));
     bootstrap.addBundle(new AssetsBundle("/assets/directives", "/directives", null, "directives"));
-    bootstrap
-        .addBundle(new AssetsBundle("/assets/controllers", "/controllers", null, "controllers"));
+    bootstrap.addBundle(new AssetsBundle("/assets/controllers", "/controllers", null, "controllers"));
     bootstrap.addBundle(new AssetsBundle("/assets/services", "/services", null, "services"));
     bootstrap.addBundle(new AssetsBundle("/assets/vendor", "/vendor", null, "vendor"));
     bootstrap.addBundle(new AssetsBundle("/assets/partials", "/partials", null, "partials"));
@@ -60,6 +81,33 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
   @Override
   public void run(final SaveWithMeConfiguration configuration, final Environment environment)
       throws ClassNotFoundException {
+
+    // assemble in Guice module and integrate it into Dropwizard here.
+    Injector injector = Guice.createInjector(new SaveWithMeModule(configuration));
+    environment.jersey().register(injector.getInstance(TweeMeRestService.class));
+
+    environment.getApplicationContext().addServlet(new ServletHolder(injector.getInstance(UserServlet.class)), "/user");
+
+
+    /*
+     * Add Health Checks
+     */
+
+    /*
+     * Filters
+     */
+    FilterRegistration.Dynamic filter = environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+    filter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+    filter.setInitParameter("allowedOrigins", "*");
+    filter.setInitParameter("allowedHeaders", "Authorization,Content-Type,X-Api-Key,Accept,Origin");
+    filter.setInitParameter("allowedMethods", "GET,POST,PUT,DELETE,OPTIONS");
+    filter.setInitParameter("preflightMaxAge", "5184000"); // 2 months
+    filter.setInitParameter("allowCredentials", "true");
+
+    /*
+     * Metrics Reporting
+     */
+    //
 
     final UserDAO dao = new UserDAO(hibernateBundle.getSessionFactory());
     final Client client =
