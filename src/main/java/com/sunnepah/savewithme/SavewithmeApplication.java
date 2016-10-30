@@ -86,7 +86,7 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
     Injector injector = Guice.createInjector(new SaveWithMeModule(configuration));
     environment.jersey().register(injector.getInstance(TweeMeRestService.class));
 
-    environment.getApplicationContext().addServlet(new ServletHolder(injector.getInstance(UserServlet.class)), "/user");
+    environment.getApplicationContext().addServlet(new ServletHolder(injector.getInstance(UserServlet.class)), "/api/v1/users");
 
 
     /*
@@ -110,16 +110,14 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
     //
 
     final UserDAO dao = new UserDAO(hibernateBundle.getSessionFactory());
-    final Client client =
-        new JerseyClientBuilder(environment).using(configuration.getJerseyClient())
-            .build(getName());
+    final Client client = new JerseyClientBuilder(environment).using(configuration.getJerseyClient()).build(getName());
     final SaveWithMeConfiguration.ClientSecretsConfiguration clientSecrets = configuration.getClientSecrets();
 
     environment.jersey().register(new ClientResource());
     environment.jersey().register(new UserResource(dao));
     environment.jersey().register(new AuthResource(client, dao, clientSecrets));
 
-    environment.servlets().addFilter("AuthFilter", new AuthFilter())
-        .addMappingForUrlPatterns(null, true, "/api/me");
+    environment.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/me");
+    environment.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/v1/users");
   }
 }
