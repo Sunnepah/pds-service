@@ -23,7 +23,7 @@ server:
 # Logging settings.
 logging:
   # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
-  level: DEBUG
+  level: INFO
 
   # Logger-specific levels.
   loggers:
@@ -41,3 +41,9 @@ clientSecrets:
     foursquare: Foursquare Secret
     twitter: Twitter Consumer Key
 
+
+mongo:
+  seeds:
+  - host: localhost
+    port: 27017
+  database: savewithme

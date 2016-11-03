@@ -3,6 +3,7 @@ package com.sunnepah.savewithme;
 import io.dropwizard.Configuration;
 import io.dropwizard.client.JerseyClientConfiguration;
 import io.dropwizard.db.DataSourceFactory;
+import com.meltmedia.dropwizard.mongo.MongoConfiguration;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -27,7 +28,10 @@ public class SaveWithMeConfiguration extends Configuration {
     @NotNull
     @JsonProperty
     private ClientSecretsConfiguration clientSecrets = new ClientSecretsConfiguration();
-    
+
+    @JsonProperty
+    protected MongoConfiguration mongo;
+
     public DataSourceFactory getDataSourceFactory() {
         return database;
     }
@@ -43,6 +47,10 @@ public class SaveWithMeConfiguration extends Configuration {
 	public ClientSecretsConfiguration getClientSecrets() {
 		return clientSecrets;
 	}
+
+    public MongoConfiguration getMongo() {
+        return mongo;
+    }
 	
 	public static class ClientSecretsConfiguration {
 		
