@@ -44,6 +44,9 @@ clientSecrets:
 
 mongo:
   seeds:
-  - host: localhost
-    port: 27017
+  - host: ds050189.mlab.com
+    port: 50189
   database: savewithme
+  credentials:
+      userName: "savewithme_user"
+      password: "savewithme_user$"
