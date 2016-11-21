@@ -1,5 +1,8 @@
-angular.module('MyApp', ['ngResource', 'ngMessages', 'ngAnimate', 'toastr', 'ui.router', 'satellizer'])
-  .config(function($stateProvider, $urlRouterProvider, $authProvider) {
+    var app = angular.module('MyApp', ['ngResource', 'ngMessages', 'ngAnimate', 'toastr', 'ui.router', 'satellizer'], function($locationProvider) {
+        $locationProvider.html5Mode(false);
+    });
+
+    app.config(function($stateProvider, $urlRouterProvider, $authProvider) {
 
     /**
      * Helper auth functions
@@ -30,8 +33,13 @@ angular.module('MyApp', ['ngResource', 'ngMessages', 'ngAnimate', 'toastr', 'ui.
     $stateProvider
       .state('home', {
         url: '/',
-        controller: 'HomeCtrl',
-        templateUrl: 'partials/home.html'
+        controller: 'LoginCtrl',
+        templateUrl: 'partials/login.html'
+      })
+      .state('dashboard', {
+        url: '/dashboard',
+        controller: 'DashboardCtrl',
+        templateUrl: 'partials/dashboard.html'
       })
       .state('login', {
         url: '/login',
@@ -68,7 +76,7 @@ angular.module('MyApp', ['ngResource', 'ngMessages', 'ngAnimate', 'toastr', 'ui.
      *  Satellizer config
      */
     $authProvider.facebook({
-      clientId: '603122136500203'
+      clientId: '143003512838560'
     });
 
     $authProvider.google({

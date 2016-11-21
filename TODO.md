@@ -27,7 +27,7 @@
 * created_date
 * update_date
 
-# saveBucket
+# savingsBucket
 * id
 * total_members
 * start_date
@@ -39,14 +39,14 @@
 * created_date
 * update_date
 
-# usersSaveBucket
+# usersSavingsBucket
 * id
 * save_bucket_id
 * user_id
 * created_date
 * update_date
 
-# saveBucketContribution
+# savingsBucketContribution
 * id
 * save_bucket_id
 * user_id
