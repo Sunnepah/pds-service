@@ -20,9 +20,7 @@ public class UserDAO extends AbstractDAO<User> {
     }
     
     public Optional<User> findByEmail(String email) {
-    	User foundUser = (User) namedQuery("User.findByEmail")
-				.setParameter("email", email)
-				.uniqueResult();
+    	User foundUser = (User) namedQuery("User.findByEmail").setParameter("email", email).uniqueResult();
     	return Optional.fromNullable(foundUser);
     }
     

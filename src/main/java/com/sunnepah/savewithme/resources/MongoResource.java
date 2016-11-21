@@ -1,8 +1,8 @@
 package com.sunnepah.savewithme.resources;
 
-/**
- * Created by sunnepah on 02/11/2016.
- * Sunday Ayandokun @sundayayandokun
+/*
+  Created by sunnepah on 02/11/2016.
+  Sunday Ayandokun @sundayayandokun
  */
 import java.util.List;
 import java.util.Map;
@@ -30,9 +30,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mongodb.DB;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/mongo")
 public class MongoResource {
+
+    private final static Logger LOG = LoggerFactory.getLogger(MongoResource.class);
 
     private DB database;
     private Jongo jongo;
@@ -88,6 +92,7 @@ public class MongoResource {
         @Produces("application/json")
         public Response putDocument(@Context UriInfo uriInfo, Map<String, JsonNode> document) {
             ObjectId id = new ObjectId();
+            LOG.info("New documnent id generated: {}", id.toString());
             document.put("_id", JsonNodeFactory.instance.textNode(id.toString()));
             collection.save(document);
             return Response.created(uriInfo.getAbsolutePathBuilder().path(id.toString()).build())
