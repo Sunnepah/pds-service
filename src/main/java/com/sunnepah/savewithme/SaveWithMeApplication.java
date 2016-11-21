@@ -20,8 +20,6 @@ import io.dropwizard.setup.Environment;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import javax.ws.rs.client.Client;
-import com.mongodb.MongoClient;
-import com.mongodb.DB;
 
 import com.sunnepah.savewithme.auth.AuthFilter;
 import com.sunnepah.savewithme.core.User;
@@ -79,12 +77,17 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
 
 //        bootstrap.addBundle(new AssetsBundle("/assets/", "/", "index.html", "static"));
         bootstrap.addBundle(new AssetsBundle("/assets/app.js", "/app.js", null, "app"));
-        bootstrap.addBundle(new AssetsBundle("/assets/stylesheets", "/stylesheets", null, "css"));
+        bootstrap.addBundle(new AssetsBundle("/assets/stylesheets", "/stylesheets", null, "stylesheets"));
         bootstrap.addBundle(new AssetsBundle("/assets/directives", "/directives", null, "directives"));
         bootstrap.addBundle(new AssetsBundle("/assets/controllers", "/controllers", null, "controllers"));
         bootstrap.addBundle(new AssetsBundle("/assets/services", "/services", null, "services"));
         bootstrap.addBundle(new AssetsBundle("/assets/vendor", "/vendor", null, "vendor"));
         bootstrap.addBundle(new AssetsBundle("/assets/partials", "/partials", null, "partials"));
+        bootstrap.addBundle(new AssetsBundle("/assets/css", "/css", null, "css"));
+        bootstrap.addBundle(new AssetsBundle("/assets/img", "/img", null, "img"));
+        bootstrap.addBundle(new AssetsBundle("/assets/js", "/js", null, "js"));
+        bootstrap.addBundle(new AssetsBundle("/assets/vendors", "/vendors", null, "vendors"));
+        bootstrap.addBundle(new AssetsBundle("/assets/fonts", "/fonts", null, "fonts"));
     }
 
     @Override
@@ -127,11 +130,11 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
 
         final UserDAO dao = new UserDAO(hibernateBundle.getSessionFactory());
         final Client client = new JerseyClientBuilder(environment).using(configuration.getJerseyClient()).build(getName());
-        final SaveWithMeConfiguration.ClientSecretsConfiguration clientSecrets = configuration.getClientSecrets();
+        final SaveWithMeConfiguration config = new SaveWithMeConfiguration();
 
         environment.jersey().register(new ClientResource());
         environment.jersey().register(new UserResource(dao));
-        environment.jersey().register(new AuthResource(client, dao, clientSecrets));
+        environment.jersey().register(new AuthResource(client, dao, config));
 
         environment.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/me");
         environment.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/v1/users");
