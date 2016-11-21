@@ -29,7 +29,12 @@ public class SaveWithMeConfiguration extends Configuration {
     @JsonProperty
     private ClientSecretsConfiguration clientSecrets = new ClientSecretsConfiguration();
 
-    @JsonProperty
+	@Valid
+	@NotNull
+	@JsonProperty
+	private OAuth oauth;
+
+	@JsonProperty
     protected MongoConfiguration mongo;
 
     public DataSourceFactory getDataSourceFactory() {
@@ -46,6 +51,10 @@ public class SaveWithMeConfiguration extends Configuration {
 	
 	public ClientSecretsConfiguration getClientSecrets() {
 		return clientSecrets;
+	}
+
+	public OAuth getOauth() {
+		return oauth;
 	}
 
     public MongoConfiguration getMongo() {
@@ -81,7 +90,7 @@ public class SaveWithMeConfiguration extends Configuration {
 		public String getFacebook() {
 			return facebook;
 		}
-		
+
 		public String getGoogle() {
 			return google;
 		}
@@ -96,6 +105,48 @@ public class SaveWithMeConfiguration extends Configuration {
 		
 		public String getTwitter() {
 			return twitter;
+		}
+	}
+
+	public static class OAuth {
+		public Facebook facebook;
+
+		public Google google;
+	}
+
+	public static class Facebook {
+		@NotBlank
+		@JsonProperty
+		String accessTokenUrl;
+
+		@NotBlank
+		@JsonProperty
+		String graphApiUrl;
+
+		public String getGraphApiUrl() {
+			return graphApiUrl;
+		}
+
+		public String getAccessTokenUrl() {
+			return accessTokenUrl;
+		}
+	}
+
+	public static class Google {
+		@NotBlank
+		@JsonProperty
+		String accessTokenUrl;
+
+		@NotBlank
+		@JsonProperty
+		String peopleApiUrl;
+
+		public String getAccessTokenUrl() {
+			return accessTokenUrl;
+		}
+
+		public String getPeopleApiUrl() {
+			return peopleApiUrl;
 		}
 	}
 }

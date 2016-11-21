@@ -1,14 +1,20 @@
 package com.sunnepah.savewithme.resources;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
+import com.nimbusds.jose.JOSEException;
 import com.sunnepah.savewithme.SaveWithMeConfiguration;
+import com.sunnepah.savewithme.auth.AuthUtils;
+import com.sunnepah.savewithme.auth.PasswordService;
 import com.sunnepah.savewithme.core.Token;
+import com.sunnepah.savewithme.core.User;
+import com.sunnepah.savewithme.core.User.Provider;
 import com.sunnepah.savewithme.db.UserDAO;
 import io.dropwizard.hibernate.UnitOfWork;
 import io.dropwizard.jersey.errors.ErrorMessage;
-
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.NotBlank;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -25,20 +31,12 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-import org.hibernate.validator.constraints.NotBlank;
-
-import com.sunnepah.savewithme.auth.AuthUtils;
-import com.sunnepah.savewithme.auth.PasswordService;
-import com.sunnepah.savewithme.core.User;
-import com.sunnepah.savewithme.core.User.Provider;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
-import com.nimbusds.jose.JOSEException;
 
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -47,7 +45,7 @@ public class AuthResource {
 
   private final Client client;
   private final UserDAO dao;
-  private final SaveWithMeConfiguration.ClientSecretsConfiguration secrets;
+  private final SaveWithMeConfiguration config;
 
   public static final String CLIENT_ID_KEY = "client_id", REDIRECT_URI_KEY = "redirect_uri",
       CLIENT_SECRET = "client_secret", CODE_KEY = "code", GRANT_TYPE_KEY = "grant_type",
@@ -59,11 +57,10 @@ public class AuthResource {
 
   public static final ObjectMapper MAPPER = new ObjectMapper();
 
-  public AuthResource(final Client client, final UserDAO dao,
-      final SaveWithMeConfiguration.ClientSecretsConfiguration secrets) {
+  public AuthResource(final Client client, final UserDAO dao, SaveWithMeConfiguration config) {
     this.client = client;
     this.dao = dao;
-    this.secrets = secrets;
+    this.config = config;
   }
 
   @POST
@@ -95,34 +92,30 @@ public class AuthResource {
   @Path("facebook")
   @UnitOfWork
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response loginFacebook(@Valid final Payload payload,
-      @Context final HttpServletRequest request) throws JsonParseException, JsonMappingException,
-      IOException, ParseException, JOSEException {
-    final String accessTokenUrl = "https://graph.facebook.com/v2.3/oauth/access_token";
-    final String graphApiUrl = "https://graph.facebook.com/v2.3/me";
+  public Response loginFacebook(@Valid final Payload payload, @Context final HttpServletRequest request)
+          throws IOException, ParseException, JOSEException {
 
     Response response;
-
     // Step 1. Exchange authorization code for access token.
 
     response =
-        client.target(accessTokenUrl).queryParam(CLIENT_ID_KEY, payload.getClientId())
+        client.target(config.getOauth().facebook.getAccessTokenUrl()).queryParam(CLIENT_ID_KEY, payload.getClientId())
             .queryParam(REDIRECT_URI_KEY, payload.getRedirectUri())
-            .queryParam(CLIENT_SECRET, secrets.getFacebook())
+            .queryParam(CLIENT_SECRET, config.getClientSecrets().getFacebook())
             .queryParam(CODE_KEY, payload.getCode()).request("text/plain")
             .accept(MediaType.TEXT_PLAIN).get();
 
     Map<String, Object> responseEntity = getResponseEntity(response);
         
     response =
-            client.target(graphApiUrl).queryParam("access_token", responseEntity.get("access_token"))
-                .queryParam("expires_in", responseEntity.get("expires_in")).request("text/plain").get();
+            client.target(config.getOauth().facebook.getGraphApiUrl())
+                  .queryParam("access_token", responseEntity.get("access_token"))
+                  .queryParam("expires_in", responseEntity.get("expires_in")).request("text/plain").get();
     
     final Map<String, Object> userInfo = getResponseEntity(response);
 
     // Step 3. Process the authenticated the user.
-    return processUser(request, Provider.FACEBOOK, userInfo.get("id").toString(),
-        userInfo.get("name").toString());
+    return processUser(request, Provider.FACEBOOK, userInfo.get("id").toString(), userInfo.get("name").toString());
   }
 
 
@@ -131,25 +124,23 @@ public class AuthResource {
   @UnitOfWork
   public Response loginGoogle(@Valid final Payload payload,
       @Context final HttpServletRequest request) throws JOSEException, ParseException,
-      JsonParseException, JsonMappingException, IOException {
-    final String accessTokenUrl = "https://accounts.google.com/o/oauth2/token";
-    final String peopleApiUrl = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+          IOException {
+
     Response response;
 
     // Step 1. Exchange authorization code for access token.
-    final MultivaluedMap<String, String> accessData = new MultivaluedHashMap<String, String>();
+    final MultivaluedMap<String, String> accessData = new MultivaluedHashMap<>();
     accessData.add(CLIENT_ID_KEY, payload.getClientId());
     accessData.add(REDIRECT_URI_KEY, payload.getRedirectUri());
-    accessData.add(CLIENT_SECRET, secrets.getGoogle());
+    accessData.add(CLIENT_SECRET, config.getClientSecrets().getGoogle());
     accessData.add(CODE_KEY, payload.getCode());
     accessData.add(GRANT_TYPE_KEY, AUTH_CODE);
-    response = client.target(accessTokenUrl).request().post(Entity.form(accessData));
+    response = client.target(config.getOauth().google.getAccessTokenUrl()).request().post(Entity.form(accessData));
     accessData.clear();
 
     // Step 2. Retrieve profile information about the current user.
     final String accessToken = (String) getResponseEntity(response).get("access_token");
-    response =
-        client.target(peopleApiUrl).request("text/plain")
+    response = client.target(config.getOauth().google.getPeopleApiUrl()).request("text/plain")
             .header(AuthUtils.AUTH_HEADER_KEY, String.format("Bearer %s", accessToken)).get();
     final Map<String, Object> userInfo = getResponseEntity(response);
 

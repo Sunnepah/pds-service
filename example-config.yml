@@ -1,0 +1,59 @@
+# Database settings.
+database:
+  # the name of your JDBC driver
+  driverClass: org.h2.Driver
+
+  # the username
+  user: sa
+
+  # the password
+  password:
+
+  # the JDBC URL
+  url: jdbc:h2:./target/example;AUTO_SERVER=TRUE
+#  url: jdbc:h2:tcp://localhost:8082/nio:./target/example
+
+server:
+  type: simple
+  connector:
+    type: http
+    port: 3002
+  applicationContextPath: /
+
+# Logging settings.
+logging:
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+
+  # Logger-specific levels.
+  loggers:
+    com.sunnepah: DEBUG
+    org.hibernate.SQL: ALL
+
+  appenders:
+    - type: console
+
+clientSecrets:
+    facebook: Facebook Client Secret
+    google: Google Client secret
+    linkedin: Linkedin Client Secret
+    github: Github Client Secret
+    foursquare: Foursquare Secret
+    twitter: Twitter Consumer Key
+
+OAuth:
+  facebook:
+      accessTokenUrl: 'https://graph.facebook.com/v2.8/oauth/access_token'
+      graphApiUrl: 'https://graph.facebook.com/v2.8/me?fields=id,name,first_name,last_name,email,gender,work,picture,link,locale'
+  google:
+      accessTokenUrl: 'https://accounts.google.com/o/oauth2/token'
+      peopleApiUrl: 'https://www.googleapis.com/plus/v1/people/me/openIdConnect'
+
+mongo:
+  seeds:
+  - host: localhost
+    port: 50189
+  database: savewithme
+  credentials:
+      userName: "username"
+      password: "password"
