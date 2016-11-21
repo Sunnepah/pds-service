@@ -32,7 +32,7 @@ public class SaveWithMeConfiguration extends Configuration {
 	@Valid
 	@NotNull
 	@JsonProperty
-	private OAuth oauth;
+	private Oauth oauth;
 
 	@JsonProperty
     protected MongoConfiguration mongo;
@@ -53,7 +53,7 @@ public class SaveWithMeConfiguration extends Configuration {
 		return clientSecrets;
 	}
 
-	public OAuth getOauth() {
+	public Oauth getOauth() {
 		return oauth;
 	}
 
@@ -108,7 +108,7 @@ public class SaveWithMeConfiguration extends Configuration {
 		}
 	}
 
-	public static class OAuth {
+	public static class Oauth {
 		public Facebook facebook;
 
 		public Google google;
