@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import com.meltmedia.dropwizard.mongo.MongoBundle;
 import com.sunnepah.savewithme.api.TweeMeRestService;
 import com.sunnepah.savewithme.db.UserDAO;
+import com.sunnepah.savewithme.db.UserRepository;
 import com.sunnepah.savewithme.resources.ClientResource;
 import com.sunnepah.savewithme.resources.MongoResource;
 import com.sunnepah.savewithme.web.UserServlet;
@@ -27,12 +28,14 @@ import com.sunnepah.savewithme.resources.AuthResource;
 import com.sunnepah.savewithme.resources.UserResource;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.jongo.Jongo;
 
 import java.util.EnumSet;
 
-public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> {
+public class SaveWithMeMainApplication extends Application<SaveWithMeConfiguration> {
+
     public static void main(final String[] args) throws Exception {
-        new SaveWithMeApplication().run(args);
+        new SaveWithMeMainApplication().run(args);
     }
 
     private final HibernateBundle<SaveWithMeConfiguration> hibernateBundle =
@@ -91,22 +94,12 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
     }
 
     @Override
-    public void run(final SaveWithMeConfiguration configuration, final Environment environment)
-            throws ClassNotFoundException {
-
+    public void run(SaveWithMeConfiguration conf, Environment env) throws ClassNotFoundException {
         // assemble in Guice module and integrate it into Dropwizard here.
-        Injector injector = Guice.createInjector(new SaveWithMeModule(configuration));
-        environment.jersey().register(injector.getInstance(TweeMeRestService.class));
+        Injector injector = Guice.createInjector(new SaveWithMeModule(conf));
+        env.jersey().register(injector.getInstance(TweeMeRestService.class));
 
-        environment.getApplicationContext().addServlet(new ServletHolder(injector.getInstance(UserServlet.class)), "/api/v1/users");
-
-        /*
-         * Mongo Client
-//         */
-//        MongoClient mongoClient = mongoBundle.getClient();
-//        DB db = mongoBundle.getDB();
-
-        environment.jersey().register(new MongoResource(mongoBundle.getDB()));
+        env.getApplicationContext().addServlet(new ServletHolder(injector.getInstance(UserServlet.class)), "/api/v1/users");
 
         /*
          * Add Health Checks
@@ -115,7 +108,7 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
         /*
          * Filters
          */
-        FilterRegistration.Dynamic filter = environment.servlets().addFilter("CORS", CrossOriginFilter.class);
+        FilterRegistration.Dynamic filter = env.servlets().addFilter("CORS", CrossOriginFilter.class);
         filter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
         filter.setInitParameter("allowedOrigins", "*");
         filter.setInitParameter("allowedHeaders", "Authorization,Content-Type,X-Api-Key,Accept,Origin");
@@ -123,20 +116,22 @@ public class SaveWithMeApplication extends Application<SaveWithMeConfiguration> 
         filter.setInitParameter("preflightMaxAge", "5184000"); // 2 months
         filter.setInitParameter("allowCredentials", "true");
 
-    /*
-     * Metrics Reporting
-     */
-        //
+        /*
+         * Metrics Reporting
+         * TODO
+         */
 
         final UserDAO dao = new UserDAO(hibernateBundle.getSessionFactory());
-        final Client client = new JerseyClientBuilder(environment).using(configuration.getJerseyClient()).build(getName());
-        final SaveWithMeConfiguration config = new SaveWithMeConfiguration();
+        final Client client = new JerseyClientBuilder(env).using(conf.getJerseyClient()).build(getName());
+        final Jongo jongo = new Jongo(mongoBundle.getDB());
+        final UserRepository userRepository = new UserRepository(mongoBundle.getDB(), jongo);
 
-        environment.jersey().register(new ClientResource());
-        environment.jersey().register(new UserResource(dao));
-        environment.jersey().register(new AuthResource(client, dao, config));
+        env.jersey().register(new ClientResource());
+        env.jersey().register(new UserResource(dao));
+        env.jersey().register(new AuthResource(client, dao, conf, userRepository));
+        env.jersey().register(new MongoResource(mongoBundle.getDB()));
 
-        environment.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/me");
-        environment.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/v1/users");
+        env.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/me");
+        env.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/v1/users");
     }
 }

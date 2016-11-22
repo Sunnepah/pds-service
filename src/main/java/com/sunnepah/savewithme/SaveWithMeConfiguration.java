@@ -57,6 +57,10 @@ public class SaveWithMeConfiguration extends Configuration {
 		return oauth;
 	}
 
+	public void setOauth(Oauth oauth) {
+		this.oauth = oauth;
+	}
+
     public MongoConfiguration getMongo() {
         return mongo;
     }
@@ -123,12 +127,20 @@ public class SaveWithMeConfiguration extends Configuration {
 		@JsonProperty
 		String graphApiUrl;
 
+		public String getAccessTokenUrl() {
+			return accessTokenUrl;
+		}
+
+		public void setAccessTokenUrl(String accessTokenUrl) {
+			this.accessTokenUrl = accessTokenUrl;
+		}
+
 		public String getGraphApiUrl() {
 			return graphApiUrl;
 		}
 
-		public String getAccessTokenUrl() {
-			return accessTokenUrl;
+		public void setGraphApiUrl(String graphApiUrl) {
+			this.graphApiUrl = graphApiUrl;
 		}
 	}
 
@@ -145,8 +157,16 @@ public class SaveWithMeConfiguration extends Configuration {
 			return accessTokenUrl;
 		}
 
+		public void setAccessTokenUrl(String accessTokenUrl) {
+			this.accessTokenUrl = accessTokenUrl;
+		}
+
 		public String getPeopleApiUrl() {
 			return peopleApiUrl;
+		}
+
+		public void setPeopleApiUrl(String peopleApiUrl) {
+			this.peopleApiUrl = peopleApiUrl;
 		}
 	}
 }

@@ -7,10 +7,13 @@ import com.nimbusds.jose.JOSEException;
 import com.sunnepah.savewithme.SaveWithMeConfiguration;
 import com.sunnepah.savewithme.auth.AuthUtils;
 import com.sunnepah.savewithme.auth.PasswordService;
+import com.sunnepah.savewithme.core.FacebookUser;
 import com.sunnepah.savewithme.core.Token;
 import com.sunnepah.savewithme.core.User;
 import com.sunnepah.savewithme.core.User.Provider;
 import com.sunnepah.savewithme.db.UserDAO;
+import com.sunnepah.savewithme.db.UserRepository;
+import com.sunnepah.savewithme.mapper.ResourceMapper;
 import io.dropwizard.hibernate.UnitOfWork;
 import io.dropwizard.jersey.errors.ErrorMessage;
 import org.apache.commons.lang3.StringUtils;
@@ -46,6 +49,7 @@ public class AuthResource {
   private final Client client;
   private final UserDAO dao;
   private final SaveWithMeConfiguration config;
+  private UserRepository userRepository;
 
   public static final String CLIENT_ID_KEY = "client_id", REDIRECT_URI_KEY = "redirect_uri",
       CLIENT_SECRET = "client_secret", CODE_KEY = "code", GRANT_TYPE_KEY = "grant_type",
@@ -57,10 +61,14 @@ public class AuthResource {
 
   public static final ObjectMapper MAPPER = new ObjectMapper();
 
-  public AuthResource(final Client client, final UserDAO dao, SaveWithMeConfiguration config) {
+  public AuthResource(final Client client,
+                      final UserDAO dao,
+                      SaveWithMeConfiguration config,
+                      UserRepository userRepository) {
     this.client = client;
     this.dao = dao;
     this.config = config;
+    this.userRepository = userRepository;
   }
 
   @POST
@@ -113,6 +121,8 @@ public class AuthResource {
                   .queryParam("expires_in", responseEntity.get("expires_in")).request("text/plain").get();
     
     final Map<String, Object> userInfo = getResponseEntity(response);
+
+    final FacebookUser fbUserInfo = ResourceMapper.parseFacebookUser(userInfo);
 
     // Step 3. Process the authenticated the user.
     return processUser(request, Provider.FACEBOOK, userInfo.get("id").toString(), userInfo.get("name").toString());
