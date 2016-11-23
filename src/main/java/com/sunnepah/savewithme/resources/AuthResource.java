@@ -11,6 +11,7 @@ import com.sunnepah.savewithme.core.FacebookUser;
 import com.sunnepah.savewithme.core.Token;
 import com.sunnepah.savewithme.core.User;
 import com.sunnepah.savewithme.core.User.Provider;
+import com.sunnepah.savewithme.db.Repository;
 import com.sunnepah.savewithme.db.UserDAO;
 import com.sunnepah.savewithme.db.UserRepository;
 import com.sunnepah.savewithme.mapper.ResourceMapper;
@@ -49,7 +50,7 @@ public class AuthResource {
   private final Client client;
   private final UserDAO dao;
   private final SaveWithMeConfiguration config;
-  private UserRepository userRepository;
+  private Repository userRepository;
 
   public static final String CLIENT_ID_KEY = "client_id", REDIRECT_URI_KEY = "redirect_uri",
       CLIENT_SECRET = "client_secret", CODE_KEY = "code", GRANT_TYPE_KEY = "grant_type",
@@ -64,7 +65,7 @@ public class AuthResource {
   public AuthResource(final Client client,
                       final UserDAO dao,
                       SaveWithMeConfiguration config,
-                      UserRepository userRepository) {
+                      Repository userRepository) {
     this.client = client;
     this.dao = dao;
     this.config = config;
@@ -119,10 +120,15 @@ public class AuthResource {
             client.target(config.getOauth().facebook.getGraphApiUrl())
                   .queryParam("access_token", responseEntity.get("access_token"))
                   .queryParam("expires_in", responseEntity.get("expires_in")).request("text/plain").get();
-    
+
+    String accessToken = responseEntity.get("access_token").toString();
     final Map<String, Object> userInfo = getResponseEntity(response);
 
     final FacebookUser fbUserInfo = ResourceMapper.parseFacebookUser(userInfo);
+    fbUserInfo.setProvider(Provider.FACEBOOK.toString());
+    fbUserInfo.setToken(accessToken);
+    //
+    userRepository.saveUser(fbUserInfo);
 
     // Step 3. Process the authenticated the user.
     return processUser(request, Provider.FACEBOOK, userInfo.get("id").toString(), userInfo.get("name").toString());
