@@ -1,11 +1,15 @@
 package com.sunnepah.savewithme;
 
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.meltmedia.dropwizard.mongo.MongoBundle;
 import com.sunnepah.savewithme.api.TweeMeRestService;
 import com.sunnepah.savewithme.db.UserDAO;
 import com.sunnepah.savewithme.db.UserRepository;
+import com.sunnepah.savewithme.health.AppHealthCheck;
 import com.sunnepah.savewithme.resources.ClientResource;
 import com.sunnepah.savewithme.resources.MongoResource;
 import com.sunnepah.savewithme.web.UserServlet;
@@ -14,6 +18,8 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.client.JerseyClientBuilder;
 import io.dropwizard.db.DataSourceFactory;
 import io.dropwizard.hibernate.HibernateBundle;
+import io.dropwizard.metrics.collectd.Collectd;
+import io.dropwizard.metrics.collectd.CollectdReporter;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -29,10 +35,16 @@ import com.sunnepah.savewithme.resources.UserResource;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.jongo.Jongo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 public class SaveWithMeMainApplication extends Application<SaveWithMeConfiguration> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SaveWithMeMainApplication.class);
 
     public static void main(final String[] args) throws Exception {
         new SaveWithMeMainApplication().run(args);
@@ -102,10 +114,6 @@ public class SaveWithMeMainApplication extends Application<SaveWithMeConfigurati
         env.getApplicationContext().addServlet(new ServletHolder(injector.getInstance(UserServlet.class)), "/api/v1/users");
 
         /*
-         * Add Health Checks
-         */
-
-        /*
          * Filters
          */
         FilterRegistration.Dynamic filter = env.servlets().addFilter("CORS", CrossOriginFilter.class);
@@ -116,10 +124,8 @@ public class SaveWithMeMainApplication extends Application<SaveWithMeConfigurati
         filter.setInitParameter("preflightMaxAge", "5184000"); // 2 months
         filter.setInitParameter("allowCredentials", "true");
 
-        /*
-         * Metrics Reporting
-         * TODO
-         */
+
+        MetricRegistry metrics = injector.getInstance(MetricRegistry.class);
 
         final UserDAO dao = new UserDAO(hibernateBundle.getSessionFactory());
         final Client client = new JerseyClientBuilder(env).using(conf.getJerseyClient()).build(getName());
@@ -128,10 +134,39 @@ public class SaveWithMeMainApplication extends Application<SaveWithMeConfigurati
 
         env.jersey().register(new ClientResource());
         env.jersey().register(new UserResource(dao));
-        env.jersey().register(new AuthResource(client, dao, conf, userRepository));
+        env.jersey().register(new AuthResource(client, dao, conf, userRepository, metrics));
         env.jersey().register(new MongoResource(mongoBundle.getDB()));
 
         env.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/me");
         env.servlets().addFilter("AuthFilter", new AuthFilter()).addMappingForUrlPatterns(null, true, "/api/v1/users");
+
+         /*
+         * Add Health Checks
+         */
+        env.healthChecks().register("AppHealthCheck", new AppHealthCheck(client));
+        /*
+         * Metrics Reporting
+         */
+        if (conf.getMetrics().getServer() != null) {
+            Collectd collectd = new Collectd(new InetSocketAddress(conf.getMetrics().getServer(), conf.getMetrics().getPort()));
+            CollectdReporter reporter = CollectdReporter.forRegistry(metrics)
+                    .prefixedWith(conf.getMetrics().getPrefix())
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .filter(MetricFilter.ALL)
+                    .build(collectd);
+            reporter.start(10, TimeUnit.SECONDS);
+
+            /* This is only relevant for dev env to display metric report in the console */
+            Slf4jReporter reporter2 = Slf4jReporter.forRegistry(metrics)
+                    .outputTo(LoggerFactory.getLogger("com.sunnepah.savewithme"))
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .prefixedWith(conf.getMetrics().getPrefix())
+                    .filter(MetricFilter.ALL)
+                    .build();
+            reporter2.start(4, TimeUnit.SECONDS);
+
+        }
     }
 }

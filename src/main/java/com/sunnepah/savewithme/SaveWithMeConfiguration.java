@@ -34,6 +34,9 @@ public class SaveWithMeConfiguration extends Configuration {
 	@JsonProperty
 	private Oauth oauth;
 
+	@JsonProperty("influxdb")
+	private MetricsConfig metrics;
+
 	@JsonProperty
     protected MongoConfiguration mongo;
 
@@ -64,6 +67,14 @@ public class SaveWithMeConfiguration extends Configuration {
     public MongoConfiguration getMongo() {
         return mongo;
     }
+
+	public MetricsConfig getMetrics() {
+		return metrics;
+	}
+
+	public void setMetrics(MetricsConfig metrics) {
+		this.metrics = metrics;
+	}
 	
 	public static class ClientSecretsConfiguration {
 		
@@ -167,6 +178,41 @@ public class SaveWithMeConfiguration extends Configuration {
 
 		public void setPeopleApiUrl(String peopleApiUrl) {
 			this.peopleApiUrl = peopleApiUrl;
+		}
+	}
+
+	public static class MetricsConfig {
+		@JsonProperty("server")
+		private String server;
+
+		@JsonProperty("port")
+		private Integer port;
+
+		@JsonProperty("prefix")
+		private String prefix;
+
+		public String getServer() {
+			return server;
+		}
+
+		public void setServer(String server) {
+			this.server = server;
+		}
+
+		public Integer getPort() {
+			return port;
+		}
+
+		public void setPort(Integer port) {
+			this.port = port;
+		}
+
+		public String getPrefix() {
+			return prefix;
+		}
+
+		public void setPrefix(String prefix) {
+			this.prefix = prefix;
 		}
 	}
 }

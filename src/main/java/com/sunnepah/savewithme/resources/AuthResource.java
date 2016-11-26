@@ -1,5 +1,7 @@
 package com.sunnepah.savewithme.resources;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -42,6 +44,8 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -51,6 +55,7 @@ public class AuthResource {
   private final UserDAO dao;
   private final SaveWithMeConfiguration config;
   private Repository userRepository;
+  private final Counter fbLoginRequestCounter;
 
   public static final String CLIENT_ID_KEY = "client_id", REDIRECT_URI_KEY = "redirect_uri",
       CLIENT_SECRET = "client_secret", CODE_KEY = "code", GRANT_TYPE_KEY = "grant_type",
@@ -65,11 +70,13 @@ public class AuthResource {
   public AuthResource(final Client client,
                       final UserDAO dao,
                       SaveWithMeConfiguration config,
-                      Repository userRepository) {
+                      UserRepository userRepository,
+                      MetricRegistry metricRegistry) {
     this.client = client;
     this.dao = dao;
     this.config = config;
     this.userRepository = userRepository;
+    this.fbLoginRequestCounter = metricRegistry.counter(name(AuthResource.class.getSimpleName(), "FacebookLoginRequest"));
   }
 
   @POST
@@ -104,6 +111,7 @@ public class AuthResource {
   public Response loginFacebook(@Valid final Payload payload, @Context final HttpServletRequest request)
           throws IOException, ParseException, JOSEException {
 
+    this.fbLoginRequestCounter.inc();
     Response response;
     // Step 1. Exchange authorization code for access token.
 
