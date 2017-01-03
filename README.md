@@ -1,4 +1,4 @@
-## SaveWithMe
+## pds-service
 
 #### - Bootstrapped with [Dropwizard](https://github.com/dropwizard/dropwizard) + [satellizer](https://github.com/sahat/satellizer) (A token-based authentication module for [AngularJS](http://angularjs.org/)) sample project.
 
