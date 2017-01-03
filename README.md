@@ -2,12 +2,12 @@
 
 #### - Bootstrapped with [Dropwizard](https://github.com/dropwizard/dropwizard) + [satellizer](https://github.com/sahat/satellizer) (A token-based authentication module for [AngularJS](http://angularjs.org/)) sample project.
 
-How to start the Savewithme application
+How to start the Pdsservice application
 ---
 
 1. Run `mvn clean install` to build your application
 1. Run `cp example-config.yml config.yml` - Modify the configuration for your environment.
-1. Start application with `java -jar target/Savewithme-1.0-SNAPSHOT.jar server config.yml`
+1. Start application with `java -jar target/pdsservice-1.0-SNAPSHOT.jar server config.yml`
 1. To check that your application is running enter url `http://localhost:3002`
 
 Health Check
@@ -39,7 +39,7 @@ your application for the first time.
 * The `PersonResource` and `PeopleResource` are the REST resource which use the PersonDAO to retrieve data from the database, note the injection
 of the PersonDAO in their constructors.
 
-As with all the modules the db example is wired up in the `initialize` function of the `SaveWithMeMainApplication`.
+As with all the modules the db example is wired up in the `initialize` function of the `PdsserviceMainApplication`.
 
 # Running The Application
 
@@ -49,11 +49,11 @@ As with all the modules the db example is wired up in the `initialize` function 
 
 * To setup the h2 database run.
 
-        java -jar target/Savewithme-1.0-SNAPSHOT.jar db migrate example.yml
+        java -jar target/pdsservice-1.0-SNAPSHOT.jar db migrate example.yml
 
 * To run the server run.
 
-        java -jar target/Savewithme-1.0-SNAPSHOT.jar server example.yml
+        java -jar target/pdsservice-1.0-SNAPSHOT.jar server example.yml
 
 * To hit this url to access the service example.
 

@@ -58,7 +58,7 @@ mongo:
   seeds:
   - host: localhost
     port: 50189
-  database: savewithme
+  database: pdsservice
   credentials:
       userName: "username"
       password: "password"
@@ -66,4 +66,4 @@ mongo:
 influxdb:
   server: localhost
   port: 8088
-  prefix: savewithme
+  prefix: pdsservice

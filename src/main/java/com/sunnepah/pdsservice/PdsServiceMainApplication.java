@@ -60,13 +60,13 @@ public class PdsServiceMainApplication extends Application<PdsServiceConfigurati
 
     @Override
     public String getName() {
-        return "SaveWithMe " + getVersion();
+        return "Pdsservice " + getVersion();
     }
 
     private String getVersion() {
         String version = null;
 
-        Package aPackage = Package.getPackage("com.sunnepah.savewithme");
+        Package aPackage = Package.getPackage("com.sunnepah.pdsservice");
         if (aPackage != null) {
             version = aPackage.getImplementationVersion();
         }
@@ -159,7 +159,7 @@ public class PdsServiceMainApplication extends Application<PdsServiceConfigurati
 
             /* This is only relevant for dev env to display metric report in the console */
             Slf4jReporter reporter2 = Slf4jReporter.forRegistry(metrics)
-                    .outputTo(LoggerFactory.getLogger("com.sunnepah.savewithme"))
+                    .outputTo(LoggerFactory.getLogger("com.sunnepah.pdsservice"))
                     .convertRatesTo(TimeUnit.SECONDS)
                     .convertDurationsTo(TimeUnit.MILLISECONDS)
                     .prefixedWith(conf.getMetrics().getPrefix())
